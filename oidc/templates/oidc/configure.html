@@ -1,3 +1,139 @@
-<h3>Domain</h3>
+<style>
+  .oidc-form-control { width: 100%; max-width: 480px; margin-top: 4px; }
+  .oidc-form-control-wide { width: 100%; max-width: 600px; margin-top: 4px; }
+  .oidc-form-control-full { width: 100%; max-width: 720px; margin-top: 4px; }
+  .oidc-checkbox { margin-right: 6px; }
+</style>
 
-<p>Users will be allowed to authenticate if they have an account under the from issuer <strong>{{ provider_name }}</strong>.</p>
+<h3>Provider</h3>
+<p>Users will be allowed to authenticate via <strong>{{ provider_name }}</strong>.</p>
+{% if domains %}
+<p>Configured domains: <strong>{{ domains|join:", " }}</strong></p>
+{% endif %}
+
+<form method="POST">
+  {% csrf_token %}
+
+  <h3>OIDC Connection</h3>
+
+  <div class="form-group">
+    <label for="sso_client_id"><strong>Client ID</strong></label>
+    <input
+      type="text"
+      id="sso_client_id"
+      name="sso_client_id"
+      value="{{ sso_client_id }}"
+      class="form-control oidc-form-control"
+      required
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="sso_client_secret"><strong>Client Secret</strong></label>
+    <input
+      type="password"
+      id="sso_client_secret"
+      name="sso_client_secret"
+      value=""
+      placeholder="{% if sso_client_secret_set %}Secret is set — leave empty to keep current value{% else %}Enter client secret{% endif %}"
+      class="form-control oidc-form-control"
+      {% if not sso_client_secret_set %}required{% endif %}
+    />
+    {% if sso_client_secret_set %}
+    <p class="help-block">A client secret is currently stored. Leave empty to keep the existing secret.</p>
+    {% endif %}
+  </div>
+
+  <div class="form-group">
+    <label for="sso_authorization_endpoint"><strong>Authorization Endpoint</strong></label>
+    <input
+      type="url"
+      id="sso_authorization_endpoint"
+      name="sso_authorization_endpoint"
+      value="{{ sso_authorization_endpoint }}"
+      placeholder="https://auth.example.com/oauth/authorize"
+      class="form-control oidc-form-control-wide"
+      required
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="sso_token_endpoint"><strong>Token Endpoint</strong></label>
+    <input
+      type="url"
+      id="sso_token_endpoint"
+      name="sso_token_endpoint"
+      value="{{ sso_token_endpoint }}"
+      placeholder="https://auth.example.com/oauth/token"
+      class="form-control oidc-form-control-wide"
+      required
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="sso_userinfo_endpoint"><strong>Userinfo Endpoint</strong></label>
+    <input
+      type="url"
+      id="sso_userinfo_endpoint"
+      name="sso_userinfo_endpoint"
+      value="{{ sso_userinfo_endpoint }}"
+      placeholder="https://auth.example.com/oauth/userinfo"
+      class="form-control oidc-form-control-wide"
+      required
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="sso_scope"><strong>Scopes</strong></label>
+    <input
+      type="text"
+      id="sso_scope"
+      name="sso_scope"
+      value="{{ sso_scope }}"
+      placeholder="openid email profile groups"
+      class="form-control oidc-form-control"
+    />
+    <p class="help-block">
+      Space-separated list of scopes. Include <code>profile</code> and <code>groups</code>
+      to get <code>permissions</code> and <code>groups</code> in the userinfo response.
+    </p>
+  </div>
+
+  <h3>Role Mapping</h3>
+
+  <div class="form-group">
+    <label for="role_attribute_path"><strong>Role attribute path</strong></label>
+    <input
+      type="text"
+      id="role_attribute_path"
+      name="role_attribute_path"
+      value="{{ role_attribute_path }}"
+      placeholder="contains(permissions, 'sentry.admin') && 'admin' || contains(permissions, 'sentry.member') && 'member'"
+      class="form-control oidc-form-control-full"
+    />
+    <p class="help-block">
+      JMESPath expression evaluated against the full userinfo response.
+      Must return a valid Sentry role: <code>owner</code>, <code>manager</code>, <code>admin</code>, <code>member</code>, or <code>contributor</code>.
+      All userinfo fields are available, including <code>permissions</code> and <code>groups</code>.<br/>
+      Example: <code>contains(permissions, 'sentry.admin') &amp;&amp; 'admin' || contains(permissions, 'sentry.member') &amp;&amp; 'member'</code>
+    </p>
+  </div>
+
+  <div class="form-group">
+    <label>
+      <input
+        type="checkbox"
+        name="role_strict_mode"
+        value="1"
+        {% if role_strict_mode %}checked{% endif %}
+        class="oidc-checkbox"
+      />
+      <strong>Role attribute strict mode</strong>
+    </label>
+    <p class="help-block">
+      If enabled, denies login if the role attribute path expression does not return a valid Sentry role.
+    </p>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save Settings</button>
+</form>
